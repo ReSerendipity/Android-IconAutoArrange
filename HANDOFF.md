@@ -71,7 +71,9 @@ C:\Users\Doro\Desktop\Android-IconAutoArrange\
 │   ├── assets/ui.html                    界面本体（HTML/CSS/JS，零依赖）
 │   ├── poc-layoutprovider.apk            产物（70KB）
 │   └── artifacts/                        取证：golden-*/、launcher DB dump、截图
-└── references\                4 个参考仓库（git 均可用）
+├── tools\                      ★ 仓库维护脚本
+│   └── fetch-references.sh               确定性重建 references/（URL+commit+稀疏规则固化，带断言）
+└── references\                4 个参考仓库（**不入公开仓**；用 tools/fetch-references.sh 还原）
 ```
 
 ## 四、已完成
