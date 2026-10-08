@@ -1,0 +1,40 @@
+name: Bug report
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。本项目为研究型 PoC；涉及真机 / 厂商 ROM 的问题请注明机型与 ROM。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 现象
+      description: 发生了什么？你期望的是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: 启动器（Launcher3 系 / 其他）、Android 版本、设备或模拟器、是否 Shizuku / root
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志
+      description: 相关 logcat / 命令输出（请自行去掉个人信息）
+      render: shell
+    validations:
+      required: false
