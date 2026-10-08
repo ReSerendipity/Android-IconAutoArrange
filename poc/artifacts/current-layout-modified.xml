@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+
+<workspace>
+
+  <appwidget container="desktop" spanX="2" spanY="2" x="0" y="1" screen="0" className="com.android.alarmclock.DigitalAppWidgetProvider" packageName="com.google.android.deskclock" />
+
+  <folder container="desktop" x="2" y="1" screen="0" titleText="效率">
+
+
+    <autoinstall className="com.google.android.apps.docs.app.NewMainProxyActivity" packageName="com.google.android.apps.docs" />
+
+    <autoinstall className="com.google.android.gm.ConversationListActivityGmail" packageName="com.google.android.gm" />
+
+  </folder>
+
+  <folder container="desktop" x="3" y="1" screen="0" titleText="工具">
+
+    <autoinstall className="com.android.deskclock.DeskClock" packageName="com.google.android.deskclock" />
+
+    <autoinstall className="com.android.documentsui.LauncherActivity" packageName="com.google.android.documentsui" />
+    <autoinstall className="com.fake.gone.Main" packageName="com.fake.gone" />
+
+    <autoinstall className="com.android.settings.Settings" packageName="com.android.settings" />
+
+  </folder>
+
+  <folder container="desktop" x="2" y="2" screen="0" titleText="影音">
+
+    <autoinstall className="com.google.android.apps.photos.home.HomeActivity" packageName="com.google.android.apps.photos" />
+
+    <autoinstall className="com.google.android.apps.youtube.music.activities.MusicActivity" packageName="com.google.android.apps.youtube.music" />
+
+    <autoinstall className="com.google.android.youtube.app.honeycomb.Shell$HomeActivity" packageName="com.google.android.youtube" />
+
+  </folder>
+
+  <folder container="desktop" x="3" y="2" screen="0" titleText="其他">
+
+    <autoinstall className="com.google.android.apps.safetyhub.LauncherActivity" packageName="com.google.android.apps.safetyhub" />
+
+    <autoinstall className="com.android.stk.StkMain" packageName="com.android.stk" />
+
+    <autoinstall className="com.google.android.googlequicksearchbox.VoiceSearchActivity" packageName="com.google.android.googlequicksearchbox" />
+
+  </folder>
+
+  <autoinstall container="desktop" x="0" y="3" screen="0" className="com.android.contacts.activities.PeopleActivity" packageName="com.google.android.contacts" />
+
+  <autoinstall container="desktop" x="1" y="3" screen="0" className="com.google.android.maps.MapsActivity" packageName="com.google.android.apps.maps" />
+
+  <autoinstall container="hotseat" rank="0" className="com.google.android.dialer.extensions.GoogleDialtactsActivity" packageName="com.google.android.dialer" />
+
+  <autoinstall container="hotseat" rank="1" className="com.google.android.apps.messaging.ui.ConversationListActivity" packageName="com.google.android.apps.messaging" />
+
+  <autoinstall container="hotseat" rank="2" className="com.google.android.apps.chrome.Main" packageName="com.android.chrome" />
+
+  <autoinstall container="hotseat" rank="3" className="com.android.camera.CameraLauncher" packageName="com.android.camera2" />
+
+</workspace>
