@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PoC 布局：<workspace> 根格式（路径⑤ 专用，见 notes/06 §0/§4）
+  下面所有 packageName/className 均取自模拟器 emulator-5554 上真实存在的启动器 Activity。
+  网格假设 5x5 + hotseat 5。
+-->
+<workspace>
+
+    <!-- ===== 桌面第 0 页 ===== -->
+    <!-- 文件夹：子节点只能是 appicon / autoinstall / shortcut -->
+    <folder container="desktop" screen="0" x="0" y="0" titleText="工作">
+        <appicon packageName="com.android.settings"
+                 className="com.android.settings.Settings" />
+        <appicon packageName="com.google.android.gm"
+                 className="com.google.android.gm.ConversationListActivityGmail" />
+        <appicon packageName="com.google.android.contacts"
+                 className="com.android.contacts.activities.PeopleActivity" />
+    </folder>
+
+    <appicon container="desktop" screen="0" x="1" y="0"
+             packageName="com.android.chrome"
+             className="com.google.android.apps.chrome.Main" />
+    <appicon container="desktop" screen="0" x="2" y="0"
+             packageName="com.google.android.apps.maps"
+             className="com.google.android.maps.MapsActivity" />
+    <appicon container="desktop" screen="0" x="3" y="0"
+             packageName="com.google.android.deskclock"
+             className="com.android.deskclock.DeskClock" />
+    <appicon container="desktop" screen="0" x="4" y="0"
+             packageName="com.android.camera2"
+             className="com.android.camera.CameraLauncher" />
+
+    <appicon container="desktop" screen="0" x="0" y="1"
+             packageName="com.google.android.calendar"
+             className="com.android.calendar.AllInOneActivity" />
+    <appicon container="desktop" screen="0" x="1" y="1"
+             packageName="com.google.android.apps.photos"
+             className="com.google.android.apps.photos.home.HomeActivity" />
+
+    <!-- ===== 桌面第 1 页 ===== -->
+    <appicon container="desktop" screen="1" x="0" y="0"
+             packageName="com.google.android.youtube"
+             className="com.google.android.youtube.app.honeycomb.Shell$HomeActivity" />
+    <appicon container="desktop" screen="1" x="1" y="0"
+             packageName="com.google.android.apps.docs"
+             className="com.google.android.apps.docs.app.NewMainProxyActivity" />
+    <appicon container="desktop" screen="1" x="2" y="0"
+             packageName="com.google.android.apps.youtube.music"
+             className="com.google.android.apps.youtube.music.activities.MusicActivity" />
+
+    <!-- ===== Hotseat / Dock：container=hotseat + rank（rank 被当 screenId 用） ===== -->
+    <appicon container="hotseat" rank="0"
+             packageName="com.google.android.dialer"
+             className="com.google.android.dialer.extensions.GoogleDialtactsActivity" />
+    <appicon container="hotseat" rank="1"
+             packageName="com.google.android.apps.messaging"
+             className="com.google.android.apps.messaging.ui.ConversationListActivity" />
+    <appicon container="hotseat" rank="2"
+             packageName="com.android.chrome"
+             className="com.google.android.apps.chrome.Main" />
+    <appicon container="hotseat" rank="3"
+             packageName="com.android.camera2"
+             className="com.android.camera.CameraLauncher" />
+
+</workspace>

@@ -1,0 +1,16 @@
+# 仓库内统一以 LF 存储；Windows 检出时按需转换
+* text=auto
+
+# 脚本必须保持 LF，否则 Git Bash / CI 下会执行失败
+*.sh  text eol=lf
+*.bat text eol=crlf
+
+# 二进制文件不做行尾转换
+*.png  binary
+*.jpg  binary
+*.apk  binary
+*.db   binary
+*.jar  binary
+*.aar  binary
+*.keystore binary
+*.idsig    binary

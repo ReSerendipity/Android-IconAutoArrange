@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>桌面自动排列</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --line:#e3e6ea; --txt:#1c2024; --sub:#6b7280;
+  --accent:#2563eb; --accent-soft:#e8effd; --accent-line:#c9dbfb;
+  --ok:#0f766e; --ok-soft:#e6f5f1;
+  --warn:#b45309; --warn-soft:#fdf3e3;
+  --danger:#b91c1c; --danger-soft:#fdeaea;
+  --muted:#f0f2f5; --empty:#e9ecf0; --cell:#ffffff;
+}
+html.dark{
+  --bg:#0f1216; --card:#171b21; --line:#2a3038; --txt:#e6e9ee; --sub:#98a2b0;
+  --accent:#6ea8fe; --accent-soft:#1b2942; --accent-line:#2f4a76;
+  --ok:#5eead4; --ok-soft:#122b28;
+  --warn:#fbbf24; --warn-soft:#2e2410;
+  --danger:#f87171; --danger-soft:#33191a;
+  --muted:#1d232b; --empty:#232a33; --cell:#1f262e;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font:14px/1.6 -apple-system,"Segoe UI",Roboto,"Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+.wrap{padding:14px 14px 40px;max-width:720px;margin:0 auto}
+h1{font-size:17px;font-weight:600;margin:0 0 2px}
+.lead{color:var(--sub);font-size:12px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.card>h2{font-size:14px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.card>h2 .n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--accent-soft);
+  color:var(--accent);font-size:11px;align-items:center;justify-content:center;font-weight:600}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.kv{flex:1 1 120px;background:var(--muted);border-radius:8px;padding:8px 10px}
+.kv .k{font-size:11px;color:var(--sub)}
+.kv .v{font-size:14px;font-weight:600;margin-top:2px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;
+  background:var(--accent-soft);color:var(--accent);font-weight:500}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.warn{background:var(--warn-soft);color:var(--warn)}
+.badge.gray{background:var(--muted);color:var(--sub)}
+.badge.danger{background:var(--danger-soft);color:var(--danger)}
+
+.screen{margin-bottom:14px}
+.screen-title{font-size:12px;color:var(--sub);margin-bottom:6px}
+.grid{display:grid;gap:4px;background:var(--muted);padding:6px;border-radius:10px}
+.cell{border-radius:7px;min-height:48px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:3px;overflow:hidden}
+.cell.empty{background:var(--empty)}
+.cell.reserved{background:repeating-linear-gradient(45deg,var(--empty),var(--empty) 5px,var(--muted) 5px,var(--muted) 10px);
+  color:var(--sub);font-size:9px;opacity:.75}
+.cell.app{background:var(--cell);border:1px solid var(--line)}
+.cell .ic{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);overflow:hidden}
+.cell .ic img{width:100%;height:100%;object-fit:contain}
+.cell .cap{font-size:9px;color:var(--sub);margin-top:2px;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell.folder{background:var(--accent-soft);border:1px solid var(--accent-line)}
+.cell.folder .mini{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.cell.folder .mini span{width:12px;height:12px;border-radius:3px;background:var(--cell);overflow:hidden;
+  display:flex;align-items:center;justify-content:center}
+.cell.folder .mini img{width:100%;height:100%;object-fit:contain}
+.cell.folder .cap{font-size:9px;color:var(--accent);margin-top:3px;font-weight:600}
+.cell.widget{background:var(--cell);border:1px dashed var(--sub);color:var(--sub);font-size:9px}
+
+.hotseat{display:flex;gap:4px;background:var(--muted);padding:6px;border-radius:10px}
+.hotseat .cell{flex:1;background:var(--cell);border:1px solid var(--line)}
+
+.applist{display:flex;flex-direction:column}
+.approw{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--muted)}
+.approw.off{opacity:.45}
+.approw .ico{width:32px;height:32px;border-radius:8px;flex:0 0 auto;overflow:hidden;
+  background:var(--muted);display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;color:var(--accent)}
+.approw .ico img{width:100%;height:100%;object-fit:contain}
+.approw .meta{flex:1 1 auto;min-width:0}
+.approw .nm{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.approw .pk{font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.approw .ctl{flex:0 0 auto;display:flex;align-items:center;gap:8px}
+select{background:var(--muted);color:var(--txt);border:1px solid var(--line);border-radius:7px;
+  font-size:11px;padding:4px 6px;max-width:86px}
+select.mod{color:var(--accent);border-color:var(--accent-line);font-weight:500}
+input[type=text]{width:100%;background:var(--muted);color:var(--txt);border:1px solid var(--line);
+  border-radius:8px;padding:9px 11px;font-size:13px;margin-top:8px;outline:none}
+input[type=text]:focus{border-color:var(--accent)}
+.cb{width:20px;height:20px;flex:0 0 auto;border:1px solid var(--line);border-radius:5px;
+  background:var(--cell);display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:transparent}
+.approw.sel .cb{background:var(--accent);border-color:var(--accent);color:#fff}
+.approw.tap{cursor:pointer}
+.cfitem{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--muted);
+  border-radius:8px;margin-top:8px}
+.cfitem .nm{flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfitem .ct{font-size:11px;color:var(--sub);white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chipbtn{padding:5px 11px;border-radius:999px;background:var(--muted);border:1px solid var(--line);
+  font-size:12px;color:var(--txt);cursor:pointer}
+.chipbtn:active{opacity:.7}
+.chipbtn.hi{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent);font-weight:500}
+.optrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.optrow label{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.divider{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.sw{position:relative;width:34px;height:20px;flex:0 0 auto}
+.sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;z-index:2}
+.sw i{position:absolute;inset:0;background:var(--muted);border:1px solid var(--line);
+  border-radius:999px;transition:.15s}
+.sw i:after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--sub);
+  top:2px;left:2px;transition:.15s}
+.sw input:checked + i{background:var(--accent);border-color:var(--accent)}
+.sw input:checked + i:after{transform:translateX(14px);background:#fff}
+
+code,pre{font-family:ui-monospace,Menlo,Consolas,monospace}
+pre{background:var(--muted);border:1px solid var(--line);border-radius:8px;padding:10px;
+  font-size:11px;overflow:auto;max-height:260px;white-space:pre-wrap;word-break:break-all;margin:8px 0 0}
+.cmd{background:#1f2937;color:#e5e7eb;border-radius:8px;padding:10px;font-size:11px;
+  word-break:break-all;margin:8px 0}
+button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:8px;
+  padding:8px 12px;font-size:13px;font-weight:500;cursor:pointer}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+button.danger{border-color:var(--danger);color:var(--danger)}
+button:active{opacity:.75}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.note{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.7}
+.note b{color:var(--warn);font-weight:600}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:12px;color:var(--accent);outline:none}
+#status{font-size:12px;margin-top:8px;min-height:18px}
+.err{color:var(--danger)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);
+  border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>桌面自动排列</h1>
+  <p class="lead">Android 图标自动归类 · Launcher3 官方布局通道</p>
+
+  <div class="card">
+    <h2><span class="n">1</span>概览</h2>
+    <div id="pendingbox"></div>
+    <div class="row" id="overview"></div>
+    <div class="note" id="mergenote"></div>
+    <div id="gridbox"></div>
+    <div id="usagebox"></div>
+    <div id="profilebox"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span>桌面预览</h2>
+    <div id="preview"><div class="note"><span class="spin"></span> 正在读取规划结果…</div></div>
+    <div class="note">斜纹格是系统占用（launcher 自己的「一览/搜索」小组件），程序会自动避开。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span>变更预览与历史</h2>
+    <div id="diffbox"></div>
+    <div id="snapbox"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">4</span>应用清单 <span class="badge gray" id="appcount"></span></h2>
+    <div class="note" style="margin:0 0 6px">
+      分类可下拉修改（改过的会高亮）；右侧开关用于把应用<b style="color:var(--sub)">排除</b>出布局。
+    </div>
+    <div class="applist" id="apps"></div>
+    <div class="btns"><button onclick="resetOverrides()">恢复自动分类</button></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">5</span>手动分组（新建文件夹）</h2>
+    <div class="note" style="margin:0">
+      勾选应用（可搜索）→ 命名 → 保存。被勾选的应用会放进桌面上的
+      <b style="color:var(--sub)">同一个文件夹</b>，并且不再参与自动分类。
+    </div>
+    <input type="text" id="cfname" placeholder="文件夹名称，例如：我的常用" value="我的分组">
+    <div class="chips" id="cfchips"></div>
+    <input type="text" id="cfsearch" placeholder="搜索应用名或包名…" oninput="renderCfList()">
+    <div class="note" id="cfsel" style="margin:6px 0 0">已选 0 个</div>
+    <div class="applist" id="cflist"></div>
+    <div class="btns">
+      <button class="pri" onclick="saveCustom()">保存为文件夹</button>
+      <button onclick="selectFilteredCf()">全选搜索结果</button>
+      <button onclick="clearCfSel()">清空勾选</button>
+    </div>
+    <div id="cfexisting"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">6</span>应用到桌面</h2>
+    <div id="applybox"></div>
+    <div class="note">
+      写 Secure Settings 需要权限，本应用按<b>三级策略</b>尝试：
+      ① 直接写（需 <code>pm grant</code> 或 root）→ ② 借 <code>su</code> → ③ 失败则用下面的 adb 命令。
+    </div>
+
+    <div class="note" style="margin-top:10px">① 仅写设置：</div>
+    <div class="cmd" id="cmd1"></div>
+    <div class="btns">
+      <button onclick="copyEl('cmd1')">复制①</button>
+      <button onclick="tryApply(false)">尝试直接应用</button>
+    </div>
+
+    <div class="note" style="margin-top:12px">② 一键全流程（写设置 + 重置桌面 + 回桌面）：</div>
+    <div class="cmd" id="cmd2"></div>
+    <div class="btns">
+      <button class="pri" onclick="copyEl('cmd2')">复制②</button>
+      <button class="danger" onclick="tryApply(true)">一键应用（需 root）</button>
+    </div>
+
+    <div id="status"></div>
+
+    <div class="note" style="margin-top:14px">
+      ③ 用 <b>Shizuku</b>（<b>免 root</b>）：<span class="badge gray" id="szkstate">检测中…</span>
+    </div>
+    <div class="btns">
+      <button onclick="requestShizuku()">请求 Shizuku 授权</button>
+      <button onclick="applyShizuku(false)">Shizuku 应用（仅写设置）</button>
+      <button class="pri" onclick="applyShizuku(true)">Shizuku 一键（会重置桌面）</button>
+    </div>
+
+    <div class="note">
+      <b>生效条件：</b>写入后必须让 launcher <b>重建桌面数据库</b>才会读取本布局，② 里已包含这一步；
+      <b>它会清空现有桌面布局</b>，请先确认。
+      <br><b>免 root 提示：</b>在 userdebug/eng 设备上先执行一次
+      <code>adb shell pm grant com.example.layoutprovider android.permission.WRITE_SECURE_SETTINGS</code>
+      之后「尝试直接应用」即可用；生产设备则需 root 或 Shizuku。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">7</span>生成的布局 XML</h2>
+    <details>
+      <summary>展开查看 / 复制</summary>
+      <div class="btns"><button onclick="copyXml()">复制 XML</button></div>
+      <pre id="xml"></pre>
+    </details>
+  </div>
+</div>
+
+<script>
+var D=null, ICON={}, BUSY=false;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+function applyTheme(){
+  try{ if(Android.getTheme()==='dark') document.documentElement.classList.add('dark'); }
+  catch(e){}
+}
+
+function load(){
+  var raw;
+  try{ raw=Android.getPlan(); }catch(e){ raw='{"error":"无法调用 Android 桥: '+e+'"}'; }
+  var d;
+  try{ d=JSON.parse(raw); }catch(e){
+    document.getElementById('preview').innerHTML='<div class="note err">解析失败：'+esc(raw.slice(0,300))+'</div>'; return; }
+  if(d.error){ document.getElementById('preview').innerHTML='<div class="note err">错误：'+esc(d.error)+'</div>'; return; }
+  D=d; ICON={};
+  (d.apps||[]).forEach(function(a){ if(a.icon) ICON[a.label]=a.icon; });
+  DOCK_SEL = (d.manualDock || []).slice();
+  renderOverview(); renderPending(); renderGridBox(); renderUsageBox(); renderProfiles();
+  renderPreview(); renderApps(); renderCommands(); renderXml();
+  refreshShizuku(); renderCfList(); renderCfExisting(); renderCfChips(); renderDiff(); renderSnapshots();
+}
+
+function iconHtml(label,fallbackChar){
+  var src=ICON[label];
+  if(src) return '<img src="'+src+'" alt="">';
+  return esc(fallbackChar||String(label||'?').slice(0,1));
+}
+
+function renderOverview(){
+  var d=D,g=d.grid;
+  document.getElementById('overview').innerHTML=
+    kv('launcher',d.launcher||'未知')+kv('网格',g.w+' × '+g.h)+kv('dock',g.hotseat+' 个')+
+    kv('应用总数',d.totalApps)+kv('桌面槽位',d.placements.length)+
+    kv('占用屏幕',Math.max(1,...d.placements.map(function(p){return p.screen+1;})));
+  var n=document.getElementById('mergenote'), h='';
+  if(d.mergeMode){
+    h+='<span class="badge ok">增量合并</span> 基线：<code>'+esc(d.mergeSource)+'</code> — 保留文件夹 '+
+       d.keptFolders+' 个、新增 '+d.added+' 个、清理失效 '+d.removed+' 项。';
+  }else{
+    h+='<span class="badge">全量重建</span> 未发现合并基线，本次按分类重新规划全部应用。'+
+       '<br>配置：<code>'+esc(d.config)+'</code>';
+  }
+  if(d.excluded) h+='<br><span class="badge warn">已排除 '+d.excluded+' 个应用</span>';
+  if(!d.gridKnown) h+='<br><span class="badge warn">网格未知</span> 尚未被 launcher 调用过，暂用默认值预览。';
+  n.innerHTML=h;
+}
+
+function kv(k,v){return '<div class="kv"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
+
+// ---------------- 排序依据：使用频率 ----------------
+function labelOf(pkg){
+  var a = (D.apps || []).filter(function(x){ return x.pkg === pkg; })[0];
+  return a ? a.label : pkg;
+}
+function sel(key, title, cur, opts){
+  return '<label>' + esc(title) + '：<select onchange="setOpt(\'' + key + '\',this.value)">' +
+    opts.map(function(o){
+      return '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('') + '</select></label>';
+}
+function setOpt(key, val){
+  try{ Android.setLayoutOption(key, val); }catch(e){}
+  Android.toast('已切换，正在重算…');
+  setTimeout(load, 250);
+}
+function openUsage(){ try{ Android.openUsageSettings(); }catch(e){} }
+
+function renderUsageBox(){
+  var st = D.usageStatus || '未知';
+  var badge = st === '可用' ? 'ok' : (st === '未授权' ? 'warn' : 'gray');
+  var h = '<div class="divider"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<span style="font-size:12px;color:var(--sub)">排序依据 · 使用情况访问</span>' +
+          '<span class="badge ' + badge + '">' + esc(st) + '</span>';
+  if(st !== '可用') h += '<button onclick="openUsage()">去开启</button>';
+  h += '</div>';
+
+  if(st === '未授权'){
+    h += '<div class="note">开启后可以按「你最常用什么」来排 Dock 和首屏，而不只是按应用名分类。</div>';
+  } else if(st === '无数据'){
+    h += '<div class="note">已授权，但系统还没有积累使用记录（新机/模拟器常见）。' +
+         '此时会自动退回默认排序，不会出错。</div>';
+  } else if(D.usageTop && D.usageTop.length){
+    h += '<div class="note">最常用：' + D.usageTop.map(function(t){
+      return esc(labelOf(t.pkg)) + ' <span style="color:var(--sub)">' + t.score + 's</span>';
+    }).join('、') + '</div>';
+  }
+
+  h += '<div class="optrow">' +
+       sel('dockMode', 'Dock', D.dockMode,
+           [['auto','自动'],['usage','按频率'],['manual','手动指定']]) +
+       sel('folderSort', '文件夹内', D.folderSort, [['name','按名称'],['usage','按频率']]) +
+       sel('screenStrategy', '首屏', D.screenStrategy, [['balanced','均衡'],['usage','常用优先']]) +
+       '</div>';
+  if(D.dockMode === 'manual') h += '<div id="dockpicker"></div>';
+  h += '</div>';
+  document.getElementById('usagebox').innerHTML = h;
+  if(D.dockMode === 'manual') {
+    var dp = document.getElementById('dockpicker');
+    if(dp) dp.innerHTML = renderDockPicker();
+  }
+}
+
+// ---------------- Dock 手动指定 ----------------
+var DOCK_SEL = [];
+function renderDockPicker(){
+  var hs = D.grid.hotseat;
+  var h = '<div class="note" style="margin-top:8px">点选要放进 Dock 的应用（**按点选顺序**，最多 ' + hs + ' 个）：</div>';
+  h += '<div class="chips">' + (D.apps || []).map(function(a){
+    var i = DOCK_SEL.indexOf(a.pkg);
+    return '<button class="chipbtn' + (i >= 0 ? ' hi' : '') +
+      '" onclick="toggleDock(\'' + esc(a.pkg) + '\')">' +
+      (i >= 0 ? (i + 1) + '. ' : '') + esc(a.label) + '</button>';
+  }).join('') + '</div>';
+  h += '<div class="btns"><button class="pri" onclick="saveDock()">保存 Dock（' +
+       DOCK_SEL.length + '/' + hs + '）</button>' +
+       '<button onclick="clearDock()">清空</button></div>';
+  return h;
+}
+function toggleDock(pkg){
+  var i = DOCK_SEL.indexOf(pkg);
+  if(i >= 0) DOCK_SEL.splice(i, 1);
+  else {
+    if(DOCK_SEL.length >= D.grid.hotseat){ Android.toast('最多 ' + D.grid.hotseat + ' 个'); return; }
+    DOCK_SEL.push(pkg);
+  }
+  document.getElementById('dockpicker').innerHTML = renderDockPicker();
+}
+function clearDock(){ DOCK_SEL = []; document.getElementById('dockpicker').innerHTML = renderDockPicker(); }
+function saveDock(){
+  try{ Android.setManualDock(DOCK_SEL.join(',')); }catch(e){}
+  Android.toast('已保存 Dock');
+  setTimeout(load, 250);
+}
+
+// ---------------- 待归位（新装 / 卸载） ----------------
+function renderPending(){
+  var el = document.getElementById('pendingbox');
+  var p = D.pending || {}, a = p.added || [], r = p.removed || [];
+  if(!a.length && !r.length){ el.innerHTML = ''; return; }
+  var parts = [];
+  if(a.length) parts.push('新增 ' + a.length + ' 个');
+  if(r.length) parts.push('移除 ' + r.length + ' 个');
+  function list(arr){
+    return arr.slice(0,6).map(esc).join('、') + (arr.length > 6 ? ' …' : '');
+  }
+  var h = '<div class="cmd" style="background:var(--warn-soft);color:var(--txt);border:1px solid var(--line)">' +
+    '检测到应用变化（' + parts.join('，') + '），尚未归位。' +
+    (a.length ? '<br>新装：' + list(a) : '') +
+    (r.length ? '<br>已卸载：' + list(r) : '') + '</div>';
+  h += '<div class="btns"><button class="pri" onclick="gotoApply()">去应用（归位）</button></div>';
+  el.innerHTML = h;
+}
+function gotoApply(){
+  var el = document.getElementById('applybox');
+  if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ---------------- 网格向导 ----------------
+function renderGridBox(){
+  var g = D.grid;
+  var opts = [[4,5,4],[4,6,4],[5,6,5],[5,5,4]];
+  var h = '<div class="divider"><div style="font-size:12px;color:var(--sub)">网格' +
+    (D.gridKnown ? '' : ' <span class="badge warn">未知，当前用默认值</span>') +
+    '</div><div class="chips">';
+  opts.forEach(function(o){
+    var cur = (g.w === o[0] && g.h === o[1] && g.hotseat === o[2]);
+    h += '<button class="chipbtn' + (cur ? ' hi' : '') + '" onclick="setGrid(' +
+         o[0] + ',' + o[1] + ',' + o[2] + ')">' + o[0] + '×' + o[1] +
+         ' · dock ' + o[2] + '</button>';
+  });
+  h += '</div><div class="note">launcher 调用过一次后网格才是准的；这里手动指定可以让预览立刻准确。</div></div>';
+  document.getElementById('gridbox').innerHTML = h;
+}
+function setGrid(w, h, hs){
+  try{ Android.setGrid(w, h, hs); }catch(e){}
+  Android.toast('网格已设为 ' + w + '×' + h);
+  setTimeout(load, 250);
+}
+
+// ---------------- 配置方案（Profile） ----------------
+function renderProfiles(){
+  var el = document.getElementById('profilebox');
+  var names = D.profiles || [], active = D.activeProfile || '默认';
+  var h = '<div class="divider"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+    '<span style="font-size:12px;color:var(--sub)">配置方案</span>' +
+    '<span class="badge">' + esc(active) + '</span></div>';
+  h += '<div class="optrow"><label>切换：<select onchange="applyProfile(this.value)">' +
+    (names.length ? names.map(function(n){
+      return '<option value="' + esc(n) + '"' + (n === active ? ' selected' : '') + '>' +
+             esc(n) + '</option>';
+    }).join('') : '<option value="">（还没有方案）</option>') +
+    '</select></label></div>';
+  h += '<input type="text" id="pname" placeholder="方案名称，例如：工作 / 极简">';
+  h += '<div class="btns">' +
+    '<button class="pri" onclick="saveProfile()">把当前配置存为方案</button>' +
+    (names.length ? '<button class="danger" onclick="delProfile()">删除当前方案</button>' : '') +
+    '</div>';
+  h += '<div class="note">方案包含：Dock 设置 / 排序策略 / 分类覆盖 / 手动分组。' +
+       '切换方案后需再点一次「应用」才会生效。</div>';
+
+  var buckets = Object.keys(D.buckets || {});
+  if(buckets.length){
+    h += '<div class="divider"><div style="font-size:12px;color:var(--sub)">' +
+         '分类命名（留空 = 恢复原名）</div>';
+    h += buckets.map(function(b){
+      var disp = (D.bucketNames || {})[b] || '';
+      return '<div class="cfitem"><span class="nm">' + esc(b) + '</span>' +
+        '<input type="text" value="' + esc(disp) + '" placeholder="改成…" ' +
+        'style="max-width:150px;margin:0" onchange="setBName(\'' + esc(b) + '\',this.value)"></div>';
+    }).join('');
+    h += '</div>';
+  }
+
+  h += '<div class="divider"><div style="font-size:12px;color:var(--sub)">备份与分享</div>' +
+       '<div class="btns"><button onclick="expCfg()">导出配置到剪贴板</button>' +
+       '<button onclick="impCfg()">从剪贴板导入</button></div>' +
+       '<div class="note">配置 JSON 很小，复制后粘贴到聊天 / 笔记里即可备份或分享给别人。</div></div></div>';
+  el.innerHTML = h;
+}
+function setBName(bucket, name){
+  try{ Android.setBucketName(bucket, name); }catch(e){}
+  Android.toast(name ? '已改名：' + name : '已恢复原名');
+  setTimeout(load, 250);
+}
+function expCfg(){
+  var r;
+  try{ r = Android.exportConfig(); }catch(e){ r = '导出失败'; }
+  Android.toast(r);
+}
+function impCfg(){
+  var r;
+  try{ r = Android.importConfig(); }catch(e){ r = '导入失败'; }
+  Android.toast(r);
+  if(r.indexOf('已导入') === 0) setTimeout(load, 300);
+}
+function applyProfile(name){
+  if(!name) return;
+  var r;
+  try{ r = Android.loadProfile(name); }catch(e){ r = '失败'; }
+  Android.toast(r === 'OK' ? '已切换到「' + name + '」' : '切换失败: ' + r);
+  setTimeout(load, 300);
+}
+function saveProfile(){
+  var n = (document.getElementById('pname').value || '').trim();
+  if(!n){ Android.toast('请先填方案名称'); return; }
+  try{ Android.saveProfile(n); }catch(e){}
+  Android.toast('已保存方案「' + n + '」');
+  setTimeout(load, 300);
+}
+function delProfile(){
+  var active = D.activeProfile;
+  if(!active) return;
+  try{ Android.deleteProfile(active); }catch(e){}
+  Android.toast('已删除「' + active + '」');
+  setTimeout(load, 300);
+}
+
+// ---------------- 历史版本（快照回滚） ----------------
+function renderSnapshots(){
+  var el = document.getElementById('snapbox');
+  var list = [];
+  try{ list = JSON.parse(Android.listSnapshots() || '[]'); }catch(e){ list = []; }
+  var h = '<div class="divider"><div style="font-size:12px;color:var(--sub)">历史版本（最多保留 5 份）</div>';
+  if(!list.length){
+    h += '<div class="note">还没有历史版本。应用一次之后，这里会出现可回滚的快照。</div></div>';
+    el.innerHTML = h;
+    return;
+  }
+  h += list.map(function(s){
+    var d = new Date(s.time);
+    var t = (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+            ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+    return '<div class="cfitem"><span class="nm">' + t +
+      (s.current ? ' <span class="badge ok">当前基线</span>' : '') + '</span>' +
+      '<span class="ct">' + s.folders + ' 文件夹 / ' + s.apps + ' 应用</span>' +
+      (s.current ? '' : '<button onclick="restoreSnap(\'' + esc(s.id) + '\')">回滚</button>') +
+      '</div>';
+  }).join('');
+  h += '<div class="note">快照只含<b>本应用生成过的布局</b>，不含你手工拖动的结果' +
+       '（免 root 读不到 launcher 的真实布局）。<b>回滚的是「布局」，不是「配置」</b> —— ' +
+       '如果之后改过 Dock / 分类设置，回滚会按<b>当前设置</b>重新生成。回滚后需再点一次「应用」才会生效。</div></div>';
+  el.innerHTML = h;
+}
+function restoreSnap(id){
+  var r;
+  try{ r = Android.restoreSnapshot(id); }catch(e){ r = '失败'; }
+  Android.toast(r === 'OK' ? '已回滚，点「应用」生效' : '回滚失败: ' + r);
+  setTimeout(load, 250);
+}
+
+// ---------------- 变更预览 ----------------
+function renderDiff(){
+  var d = D.diff || {}, el = document.getElementById('diffbox');
+  if(!d.hasBaseline){
+    el.innerHTML = '<div class="note">还没有历史布局可比对（首次运行）。应用一次之后，' +
+                   '这里会显示本次相对上次的变化。</div>';
+    return;
+  }
+  function block(title, arr){
+    if(!arr || !arr.length) return '';
+    return '<details><summary>' + title + '（' + arr.length + '）</summary>' +
+           '<div class="note">' + arr.map(esc).join('<br>') + '</div></details>';
+  }
+  var h = '<div class="row">' +
+    kv('新增', (d.added || []).length) + kv('移除', (d.removed || []).length) +
+    kv('移动', (d.moved || []).length) + kv('保留', d.kept) + '</div>';
+  h += block('新增的应用', d.added);
+  h += block('消失的应用', d.removed);
+  h += block('换了位置的应用', d.moved);
+  h += '<div class="note">对比基线是本应用<b>上次生成的布局</b>，' +
+       '不是 launcher 的真实当前布局（免 root 读不到）—— 所以它反映的是' +
+       '「我们的规划变了什么」，看不到你手工拖动的痕迹。</div>';
+  el.innerHTML = h;
+}
+
+function cell(p){
+  var span='grid-column:span '+p.spanX+';grid-row:span '+p.spanY+';';
+  if(p.kind==='folder'){
+    var mini=(p.labels||[]).slice(0,4).map(function(l){
+      return '<span>'+iconHtml(l)+'</span>';}).join('');
+    return '<div class="cell folder" style="'+span+'"><div class="mini">'+mini+'</div>'+
+           '<div class="cap">'+esc(p.title)+'</div></div>';
+  }
+  if(p.kind==='appwidget') return '<div class="cell widget" style="'+span+'">小组件</div>';
+  if(p.kind==='searchwidget') return '<div class="cell widget" style="'+span+'">搜索框</div>';
+  var lb=(p.labels&&p.labels[0])||'?';
+  return '<div class="cell app" style="'+span+'"><div class="ic">'+iconHtml(lb)+'</div>'+
+         '<div class="cap">'+esc(lb)+'</div></div>';
+}
+
+function renderPreview(){
+  var d=D,g=d.grid,ps=d.placements||[];
+  var screens=Math.max(1,...ps.map(function(p){return p.screen+1;}));
+  var html='';
+  for(var s=0;s<screens;s++){
+    var here=ps.filter(function(p){return p.screen===s;}),map={},skip={};
+    here.forEach(function(p){map[p.x+','+p.y]=p;
+      for(var i=0;i<p.spanX;i++)for(var j=0;j<p.spanY;j++){if(i||j)skip[(p.x+i)+','+(p.y+j)]=1;}});
+    html+='<div class="screen"><div class="screen-title">屏幕 '+s+'</div>'+
+          '<div class="grid" style="grid-template-columns:repeat('+g.w+',1fr)">';
+    for(var y=0;y<g.h;y++)for(var x=0;x<g.w;x++){
+      var k=x+','+y; if(skip[k])continue;
+      var p=map[k];
+      if(p)html+=cell(p);
+      else if(s===0&&y<d.topReserved)html+='<div class="cell reserved">系统占用</div>';
+      else html+='<div class="cell empty"></div>';
+    }
+    html+='</div></div>';
+  }
+  if(d.hotseat&&d.hotseat.length){
+    html+='<div class="screen"><div class="screen-title">Dock</div><div class="hotseat">'+
+      d.hotseat.map(function(l){return '<div class="cell app"><div class="ic">'+iconHtml(l)+
+      '</div><div class="cap">'+esc(l)+'</div></div>';}).join('')+'</div></div>';
+  }
+  document.getElementById('preview').innerHTML=html;
+}
+
+function allBuckets(){
+  var s={};
+  (D.apps||[]).forEach(function(a){s[a.bucket]=1;s[a.auto]=1;});
+  ['效率','工具','影音','社交','出行','资讯','游戏','其他'].forEach(function(b){s[b]=1;});
+  return Object.keys(s).filter(Boolean).sort();
+}
+
+function renderApps(){
+  var apps=D.apps||[];
+  document.getElementById('appcount').textContent=apps.length+' 个';
+  var opts=allBuckets();
+  document.getElementById('apps').innerHTML=apps.map(function(a){
+    var sel=opts.map(function(b){
+      return '<option value="'+esc(b)+'"'+(b===a.bucket?' selected':'')+'>'+esc(b)+'</option>';}).join('');
+    var dest=a.dest==='excluded'?'<span class="badge danger">已排除</span>'
+      : a.dest.indexOf('folder:')===0?'<span class="badge">📁 '+esc(a.dest.slice(7))+'</span>'
+      : a.dest==='dock'?'<span class="badge">Dock</span>'
+      : a.dest==='desktop'?'<span class="badge">桌面</span>'
+      :'<span class="badge gray">未排入</span>';
+    return '<div class="approw'+(a.excluded?' off':'')+'">'+
+      '<div class="ico">'+iconHtml(a.label)+'</div>'+
+      '<div class="meta"><div class="nm">'+esc(a.label)+'</div>'+
+        '<div class="pk">'+esc(a.pkg)+'</div>'+
+        '<div style="margin-top:3px">'+dest+
+          (a.usage>0?' <span class="badge gray">'+a.usage+'s</span>':'')+
+          (a.overridden?' <span class="badge warn">已改</span>':'')+'</div></div>'+
+      '<div class="ctl">'+
+        '<select class="'+(a.overridden?'mod':'')+'" onchange="setBucket(\''+esc(a.pkg)+'\',this.value)">'+sel+'</select>'+
+        '<label class="sw"><input type="checkbox"'+(a.excluded?' checked':'')+
+          ' onchange="setExcluded(\''+esc(a.pkg)+'\',this.checked)"><i></i></label>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ---------------- 手动分组（勾选/搜索 → 一个文件夹） ----------------
+var CF_SEL = {}, CF_EDIT_ID = '';
+
+function renderCfList(){
+  var box = document.getElementById('cfsearch');
+  var q = (box && box.value || '').trim().toLowerCase();
+  var apps = (D.apps || []).filter(function(a){
+    if(!q) return true;
+    return a.label.toLowerCase().indexOf(q) >= 0 || a.pkg.toLowerCase().indexOf(q) >= 0;
+  });
+  document.getElementById('cflist').innerHTML = apps.length ? apps.map(function(a){
+    var on = !!CF_SEL[a.pkg];
+    return '<div class="approw tap'+(on?' sel':'')+'" onclick="toggleCf(\''+esc(a.pkg)+'\')">'+
+      '<div class="ico">'+iconHtml(a.label)+'</div>'+
+      '<div class="meta"><div class="nm">'+esc(a.label)+'</div>'+
+        '<div class="pk">'+esc(a.pkg)+'</div></div>'+
+      '<div class="cb">✓</div></div>';
+  }).join('') : '<div class="note">没有匹配的应用</div>';
+  updateCfCount();
+}
+function toggleCf(pkg){ CF_SEL[pkg] = !CF_SEL[pkg]; renderCfList(); }
+function updateCfCount(){
+  var n = Object.keys(CF_SEL).filter(function(k){ return CF_SEL[k]; }).length;
+  document.getElementById('cfsel').textContent = '已选 ' + n + ' 个' +
+    (n > 0 && n < 2 ? '（至少 2 个才能成为文件夹）' : '');
+}
+function clearCfSel(){ CF_SEL = {}; CF_EDIT_ID = ''; renderCfList(); }
+
+// ---- 快捷全选：按分类 chips / 全选搜索结果 ----
+function renderCfChips(){
+  var apps = D.apps || [], counts = {};
+  apps.forEach(function(a){ counts[a.bucket] = (counts[a.bucket] || 0) + 1; });
+  var keys = Object.keys(counts).sort(function(a,b){ return counts[b] - counts[a]; });
+  document.getElementById('cfchips').innerHTML =
+    '<button class="chipbtn hi" onclick="selectAllCf()">全选 ' + apps.length + ' 个</button>' +
+    keys.map(function(k){
+      return '<button class="chipbtn" onclick="selectBucketCf(\'' + esc(k) + '\')">' +
+             esc(k) + ' ' + counts[k] + '</button>';
+    }).join('');
+}
+function selectAllCf(){
+  (D.apps || []).forEach(function(a){ CF_SEL[a.pkg] = true; });
+  renderCfList(); Android.toast('已全选 ' + (D.apps || []).length + ' 个');
+}
+function selectBucketCf(bucket){
+  var n = 0;
+  (D.apps || []).forEach(function(a){ if(a.bucket === bucket){ CF_SEL[a.pkg] = true; n++; } });
+  renderCfList(); Android.toast('已选中「' + bucket + '」' + n + ' 个');
+}
+function selectFilteredCf(){
+  var q = (document.getElementById('cfsearch').value || '').trim().toLowerCase();
+  var n = 0;
+  (D.apps || []).forEach(function(a){
+    if(!q || a.label.toLowerCase().indexOf(q) >= 0 || a.pkg.toLowerCase().indexOf(q) >= 0){
+      CF_SEL[a.pkg] = true; n++;
+    }
+  });
+  renderCfList(); Android.toast('已选中 ' + n + ' 个');
+}
+function saveCustom(){
+  var pkgs = Object.keys(CF_SEL).filter(function(k){ return CF_SEL[k]; });
+  if(pkgs.length < 2){ Android.toast('至少勾选 2 个应用'); return; }
+  var name = (document.getElementById('cfname').value || '').trim() || '我的分组';
+  var r;
+  try{ r = Android.setCustomFolder(CF_EDIT_ID, name, pkgs.join(',')); }catch(e){ r = '失败'; }
+  if(r === 'OK'){ CF_SEL = {}; CF_EDIT_ID = ''; Android.toast('已保存：' + name); setTimeout(load, 250); }
+  else Android.toast('保存失败: ' + r);
+}
+function editCustom(id){
+  var cf = (D.customFolderList || []).filter(function(c){ return c.id === id; })[0];
+  if(!cf) return;
+  CF_SEL = {}; CF_EDIT_ID = id;
+  cf.pkgs.forEach(function(p){ CF_SEL[p] = true; });
+  document.getElementById('cfname').value = cf.name;
+  renderCfList();
+  Android.toast('已载入「' + cf.name + '」');
+}
+function deleteCustom(id){
+  try{ Android.deleteCustomFolder(id); }catch(e){}
+  setTimeout(load, 250);
+}
+function renderCfExisting(){
+  var list = D.customFolderList || [], el = document.getElementById('cfexisting');
+  if(!list.length){ el.innerHTML = '<div class="note">还没有手动分组。</div>'; return; }
+  el.innerHTML = '<div class="note" style="margin-top:12px">已有手动分组：</div>' +
+    list.map(function(cf){
+      return '<div class="cfitem"><span class="nm">📁 ' + esc(cf.name) + '</span>' +
+        '<span class="ct">' + cf.count + ' 个</span>' +
+        '<button onclick="editCustom(\'' + esc(cf.id) + '\')">编辑</button>' +
+        '<button class="danger" onclick="deleteCustom(\'' + esc(cf.id) + '\')">删除</button></div>';
+    }).join('');
+}
+
+function busy(on){
+  if(BUSY===on) return; BUSY=on;
+  if(on) document.getElementById('status').innerHTML='<span class="spin"></span> 处理中…';
+}
+
+function setBucket(pkg,val){
+  if(BUSY) return; busy(true);
+  try{ Android.setOverride(pkg,val,false); }catch(e){}
+  setTimeout(function(){ busy(false); load(); },120);
+}
+function setExcluded(pkg,on){
+  if(BUSY) return; busy(true);
+  var cur='';
+  (D.apps||[]).forEach(function(a){ if(a.pkg===pkg) cur=a.bucket; });
+  try{ Android.setOverride(pkg,cur,on); }catch(e){}
+  setTimeout(function(){ busy(false); load(); },120);
+}
+function resetOverrides(){
+  if(BUSY) return; busy(true);
+  try{ Android.clearOverrides(); }catch(e){}
+  setTimeout(function(){ busy(false); load(); },150);
+}
+
+function renderCommands(){
+  var lp=(D&&D.launcher)?D.launcher:'<launcher 包名>';
+  document.getElementById('cmd1').textContent =
+    'adb shell settings put secure launcher3.layout.provider com.example.layoutprovider';
+  document.getElementById('cmd2').textContent =
+    'adb shell "settings put secure launcher3.layout.provider com.example.layoutprovider'+
+    ' && pm clear '+lp+
+    ' && am start -a android.intent.action.MAIN -c android.intent.category.HOME"';
+}
+
+function refreshShizuku(){
+  var el=document.getElementById('szkstate'); if(!el) return;
+  var s;
+  try{ s=Android.shizukuState(); }catch(e){ s='不可用'; }
+  el.textContent=s;
+  el.className='badge'+(s==='已授权'?' ok':(s.indexOf('未运行')>=0||s.indexOf('未授权')>=0?' warn':''));
+}
+function requestShizuku(){
+  try{ Android.requestShizuku(); }catch(e){}
+  Android.toast('请在 Shizuku 弹窗中允许');
+  setTimeout(refreshShizuku,2500); setTimeout(refreshShizuku,6000);
+}
+function applyShizuku(full){
+  if(BUSY) return; busy(true);
+  setTimeout(function(){
+    var r; try{ r=Android.applyViaShizuku(full); }catch(e){ r='调用失败: '+e; }
+    busy(false);
+    document.getElementById('status').innerHTML = r==='OK'
+      ? (full ? '<span class="badge ok">已应用</span> Shizuku 已完成「写设置 + 重置桌面」。'
+              : '<span class="badge ok">已写入</span> 还需让 launcher 重建数据库才会生效。')
+      : '<span class="err">'+esc(r)+'</span>';
+    refreshShizuku();
+  },30);
+}
+
+function renderXml(){ document.getElementById('xml').textContent=D.xml||''; }
+
+function copyEl(id){
+  try{ Android.copy(document.getElementById(id).textContent); }
+  catch(e){ Android.toast('复制失败'); }
+}
+function copyXml(){ try{Android.copy(D.xml||'');}catch(e){Android.toast('复制失败');} }
+
+function tryApply(full){
+  if(BUSY) return; busy(true);
+  setTimeout(function(){
+    var r;
+    try{ r= full ? Android.applyFull() : Android.apply(); }catch(e){ r='调用失败: '+e; }
+    busy(false);
+    document.getElementById('status').innerHTML = r==='OK'
+      ? (full
+        ? '<span class="badge ok">已应用</span> 设置已写入并已重置 launcher，桌面应已按新布局重建。'
+        : '<span class="badge ok">已写入</span> 还需让 launcher 重建数据库才会生效。')
+      : '<span class="err">'+esc(r)+'</span>';
+  },30);
+}
+
+applyTheme();
+load();
+</script>
+</body>
+</html>

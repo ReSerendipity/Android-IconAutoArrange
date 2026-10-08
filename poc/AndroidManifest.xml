@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.layoutprovider">
+
+    <!-- targetSdk 30+ 的包可见性：不声明 <queries> 就查不到别的应用（P3 需要枚举全部启动器应用） -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- 用于识别"启动器自身"（声明了 HOME 的应用），排布时排除 -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <!-- 目标：让本应用能自己写 launcher3.layout.provider。
+         protectionLevel 含 development → 在 userdebug/eng 构建上可用 `adb shell pm grant` 一次性授予。 -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+
+    <!-- 使用频率（按习惯排列的排序依据）。appop 型权限，用户可在「设置 → 特殊应用权限 →
+         使用情况访问」授予，免 root；userdebug 也可 `adb shell appops set <pkg> GET_USAGE_STATS allow`。 -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
+    <!-- Shizuku：借用 shell 身份执行命令（见 notes/12 §5） -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+
+    <application
+        android:label="桌面自动排列"
+        android:allowBackup="false">
+
+        <meta-data
+            android:name="moe.shizuku.client.V3_SUPPORT"
+            android:value="true" />
+
+        <!-- Shizuku：客户端必须声明这个 provider，Shizuku 才把 binder 递过来 -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="com.example.layoutprovider.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- UI：WebView 壳（见 MainActivity） -->
+        <activity
+            android:name="com.example.layoutprovider.MainActivity"
+            android:exported="true"
+            android:label="桌面自动排列">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 路径⑤ 的「提供方」：向 launcher 返回 <workspace> 布局 XML -->
+        <provider
+            android:name="com.example.layoutprovider.LayoutProvider"
+            android:authorities="com.example.layoutprovider"
+            android:exported="true" />
+    </application>
+</manifest>
