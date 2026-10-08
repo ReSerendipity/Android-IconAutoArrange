@@ -33,12 +33,34 @@
 ```
 AndroidIconAutoArrange/
 ├── README.md
-└── references/
+├── HANDOFF.md                    # 交接总结（新对话从这里开始）
+├── LICENSE                       # Apache-2.0
+├── notes/                        # 21 篇研究笔记（精读 + 各阶段产出）
+├── poc/                          # 可运行的 PoC 工程
+│   ├── src/                      # 8 个 Java 源文件
+│   ├── assets/ui.html            # 界面本体
+│   ├── build.sh                  # 无 Gradle 手搓 APK
+│   └── tools/capture-golden.sh   # 回归基线抓取
+├── tools/
+│   └── fetch-references.sh       # 确定性重建 references/（见下）
+└── references/                   # 4 个上游参考仓库（**不入仓**，用上面的脚本还原）
     ├── android-app-organizer/      # LLM 辅助布局规划 + 自动化整理（Kotlin, MIT）
     ├── android-folderautomanager/  # 自动文件夹管理雏形（Kotlin）
-    ├── novalaunchereditor/         # Nova Launcher 备份文件查看/编辑（TypeScript）
+    ├── novalaunchereditor/         # Nova Launcher 备份文件查看/编辑（TypeScript，**无 License**）
     └── lawnchair/                  # 开源启动器，布局 / schema 权威参考（Kotlin，稀疏检出核心目录）
 ```
+
+### 还原 `references/`
+
+`references/` 因体积与版权不入本仓，但笔记里的结论**依赖具体 commit**（尤其 lawnchair），
+随手 clone 最新版会让行号与行为结论全部失效。用脚本一次性还原：
+
+```bash
+bash tools/fetch-references.sh
+```
+
+脚本把 4 个仓库的 URL / 分支 / commit / 稀疏检出规则全部固化，末尾会**断言** HEAD
+是否等于钉住的 commit。实测约 33 秒、89 MB（远小于手工全量克隆）。
 
 ## 各参考项目看点
 
