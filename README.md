@@ -161,5 +161,7 @@ bash poc/tools/capture-golden.sh <输出目录>
 | **android-folderautomanager** | 自动归类思路参考 | 未声明 | ❌ 否 |
 | **novalaunchereditor** | 备份文件格式参考 | **未声明**（保留所有权利） | ❌ 否 —— **仅参考思路，未复制任何代码** |
 
-> `references/` 与 `poc/apks/` 因体积与上游版权原因**不纳入本仓库**，
-> 需要时请自行克隆 / 下载（见上文「目录结构」与各笔记中的来源标注）。
+> `references/` 与 `poc/apks/` 因体积与上游版权原因**不纳入本仓库**。
+> 需要时请自行克隆 / 下载（见上文「目录结构」与各笔记中的来源标注）；
+> 其中两个 PoC 运行时 APK 已归档到私有仓 `Android-IconAutoArrange-Assets-Backup`
+> —— 尤其是 Lawnchair nightly #5175（CI 产物已过期，**无法再获取**）。
