@@ -86,6 +86,46 @@ AndroidIconAutoArrange/
 | 19 | `notes/19-P10-快照回滚与多套方案.md` | **P10 第 6–7 步**：快照回滚 + 多套方案 Profile |
 | 20 | `notes/20-P10-待归位与导入导出.md` | **P10 第 8–10 步**：待归位 + 配置导入导出 + P3 小项（含 P10 收尾） |
 
+## 构建与运行
+
+**前置**：JDK（`javac` / `keytool` 在 PATH）、Android SDK（含 build-tools 与 platform）、Python 3。
+
+```bash
+cd poc
+bash build.sh          # 产出 poc-layoutprovider.apk
+```
+
+脚本**不依赖 Gradle / AGP**，只用 SDK 自带的 `aapt2 + d8 + zipalign + apksigner`。
+SDK 路径与版本自动探测，可用环境变量覆盖：
+
+| 变量 | 作用 | 默认 |
+|---|---|---|
+| `ANDROID_SDK_ROOT` / `ANDROID_HOME` | SDK 根目录 | 自动探测常见位置 |
+| `TARGET_API` | 目标 API（同时决定首选 platform） | `35` |
+| `BT_VERSION` | 首选 build-tools 版本 | `35.0.0` |
+| `PYTHON` | python 解释器 | `python3` → `python` → `py` |
+
+安装并用 adb 触发一次布局导入（以 Lawnchair 为例）：
+
+```bash
+adb install -r poc/poc-layoutprovider.apk
+adb shell settings put secure launcher3.layout.provider com.example.layoutprovider
+adb shell pm clear app.lawnchair.nightly
+adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME
+```
+
+也可以直接打开 app，在界面里点「应用」——授权 Shizuku 后**免 root 一键**完成上述全部步骤。
+
+> ⚠️ 前提：设备上的启动器属于 **Launcher3 系**（Pixel Launcher / Lawnchair）。
+> **Nova 等第三方启动器不支持**。
+
+回归基线抓取（`full` / `merge` 两种模式，末尾带模式断言）：
+
+```bash
+bash poc/tools/capture-golden.sh <输出目录>
+# 多设备时显式指定：DEV="-s <serial>" bash poc/tools/capture-golden.sh <输出目录>
+```
+
 ## 待办
 
 - [ ] 验证 Shizuku 读写 `launcher.db` 的可行性（改字段 → 重启 launcher → 生效）

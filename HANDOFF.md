@@ -1,7 +1,7 @@
 # 交接总结 —— 新对话从这里开始
 
 > 生成时间：2026-10-01 00:00
-> 最近复核：2026-10-03 11:35（**P10 全部 10 步完成** —— 路线图 7 项功能 + 彻底重构全部落地；默认输出仍逐字节一致）
+> 最近复核：2026-10-08 14:45（**已开源发布** —— 公开仓库 `ReSerendipity/Android-IconAutoArrange`，Apache-2.0；构建脚本已去硬编码、可移植）
 > 用途：当前对话上下文过长，此文档用于在新对话中无缝接续
 
 ---
@@ -31,6 +31,9 @@
 ```
 C:\Users\Doro\Desktop\Android-IconAutoArrange\
 ├── README.md
+├── LICENSE                    Apache-2.0
+├── .gitignore                 排除 references/ 与第三方 APK 等
+├── .gitattributes             固定 *.sh 为 LF
 ├── notes\
 │   ├── 00-总览评估.md          ← 状态盘点 + 五路径对比 + 分阶段计划
 │   ├── 01-android-app-organizer.md       UIAutomator2 + 快照混合
@@ -54,8 +57,8 @@ C:\Users\Doro\Desktop\Android-IconAutoArrange\
 │   └── 19-P10-快照回滚与多套方案.md         ★ P10 第 6–7 步：快照回滚 + 多套方案 Profile
 │   └── 20-P10-待归位与导入导出.md           ★ P10 第 8–10 步：待归位 + 导入导出 + P3 小项（含 P10 收尾）
 ├── poc\                        ★ 可运行的 PoC 工程
-│   ├── build.sh                          无 Gradle 手搓 APK（aapt2+d8+apksigner，含 Shizuku SDK）
-│   ├── tools/capture-golden.sh           ★ 回归基线抓取（带模式断言；用 forceFull，免 root）
+│   ├── build.sh                          ★ 无 Gradle 手搓 APK（aapt2+d8+apksigner，含 Shizuku SDK；SDK/版本/python 自动探测）
+│   ├── tools/capture-golden.sh           ★ 回归基线抓取（带模式断言；用 forceFull，免 root；adb/python 自动探测）
 │   ├── shizuku/                          从 AAR 抽出的 classes.jar（离线依赖）
 │   ├── src/.../LayoutProvider.java       ← 只做 ContentProvider 契约
 │   ├── src/.../LayoutPlanner.java        ★ 纯规划（枚举/分类/成组/占格/渲染 + 三处频率策略）
@@ -823,6 +826,61 @@ UI 是一排**按点选顺序编号**的应用 chips（`1. Chrome` …），超�
 - **不支持 Nova 等非 Launcher3 启动器**（要无障碍，成本极高）
 - 方案切换是"写入式"；快照只含布局不含配置；Diff 不报坐标级移动 —— 均为有意取舍，已分别记录
 - 应用图标运行时生成，首屏稍慢，可改按需加载
+
+---
+
+## 二十六、开源发布 + 构建脚本可移植化（2026-10-08）
+
+### 发布
+
+项目此前**从未 git 化**（无 `.git`，无任何提交），GitHub 上也无对应仓库。现已建公开仓库并完成首次提交：
+
+- 仓库：https://github.com/ReSerendipity/Android-IconAutoArrange （public，默认分支 `main`）
+- 首次提交 `f1614ea`：150 文件 / 19.66 MB / 9,536 行新增
+- 校验：本地 `HEAD` == `origin/main`，**tree 哈希一致**（`e7a05a1a…`）→ 远程与本地逐字节相同
+- 许可：**Apache-2.0**（新增 `LICENSE`，含官方全文；README 补「许可与第三方组件」表）
+- 新增 `.gitignore`：排除 `references/`（上游克隆）、`poc/apks/`（第三方 APK）、
+  `poc/out/`、`poc/debug.keystore`（build.sh 可重新生成）、`poc/artifacts/pj-*.txt` 等临时转储
+- 新增 `.gitattributes`：`*.sh text eol=lf` —— **本机全局 `core.autocrlf=true`**，
+  不加会让脚本被检出成 CRLF，在 Git Bash 下执行失败
+- 未纳入：2698 文件 / 67.93 MB（references 2652 + apks 2 + out 21 + artifacts 转储 23）
+
+### 构建脚本可移植化
+
+原 `build.sh` / `capture-golden.sh` 硬编码了 `C:\Users\Doro\...` 的本机路径，
+**公开仓库里别人无法构建**。已改造为自动探测：
+
+| 项 | 探测顺序 | 覆盖方式 |
+|---|---|---|
+| SDK | `ANDROID_SDK_ROOT` → `ANDROID_HOME` → 各平台常见默认位置 | 环境变量 |
+| build-tools | 首选 35.0.0 → 否则取最新可用版本 | `BT_VERSION` |
+| platform | 首选 android-35 → 否则取最新 | `TARGET_API` |
+| python | `python3` → `python` → `py` | `PYTHON` |
+| adb | `ADB` → SDK `platform-tools/adb[.exe]` → PATH | `ADB` |
+| 设备 | 留空 = 自动选唯一设备；多设备必须显式指定 | `DEV="-s <serial>"` |
+
+build-tools 工具后缀也做了跨平台处理（Linux/macOS 无后缀，Windows 为 `.exe` / `.bat`）。
+
+**验证**（改造前后 `classes.dex` 与 APK 大小**完全一致** → 纯可移植性改造，零行为变化）：
+
+| 用例 | 结果 |
+|---|---|
+| 不设任何环境变量 | ✅ 自动探测到 SDK / 35.0.0 / android-35 / python3，构建成功 |
+| `classes.dex` md5 | ✅ `b1816c64befcbf53b9d28672970e160d`（与改造前一致） |
+| `BT_VERSION=99.0.0`（不存在） | ✅ 降级到最新 36.1.0 |
+| `TARGET_API=99`（不存在） | ✅ 降级到 android-36.1 并打印告警 |
+| SDK 路径不存在 | ✅ 明确报错并提示设置 `ANDROID_SDK_ROOT` |
+| `capture-golden.sh` 成功路径 | ✅ full / merge 模式断言均 OK |
+| 多设备且 `DEV` 留空 | ✅ 列出设备并要求显式指定 |
+
+> 顺带修掉一个自己写出来的缺陷：初版预检在**多设备**时报「没有可用设备」，
+> 信息不准确 —— 已改为区分「0 台」与「多台」两种情况。
+
+### 真机情况（新变化）
+
+复核时发现**真机已接入**：`realme RMX5010`，Android 16（SDK 36）。
+这是 §二十五 里「未在真机验证」那项遗留的**唯一阻塞点**，现在具备验证条件 ——
+但尚未执行（真机未装本 app 与 Lawnchair；且会改动真实桌面，需先确认）。
 
 ---
 
