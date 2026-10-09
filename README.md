@@ -17,7 +17,7 @@
 
 ## 关键认知
 
-安卓**没有公开 API** 让第三方重排桌面图标。图标位置存储在各启动器（Launcher）各自的私有数据库中。因此「自动排列」只能通过以下四条路径之一实现：
+安卓**没有公开 API** 让第三方重排桌面图标。图标位置存储在各启动器（Launcher）各自的私有数据库中。因此「自动排列」只能通过以下路径之一实现（其中 ⑤ 为本项目实测并落地的主路径）：
 
 | # | 路径 | 授权要求 | 可靠性 | 速度 | 备注 |
 |---|---|---|---|---|---|
@@ -25,6 +25,7 @@
 | ② | Shizuku / root 直读写 `launcher.db` | Shizuku 或 root | 高 | 瞬时 | **产品主方案**（Launcher3 的 `favorites` 表） |
 | ③ | 解析启动器备份文件（JSON/XML） | 无 | 高 | 瞬时 | 依赖具体启动器格式 |
 | ④ | 自建启动器 | 设为默认桌面 | 最高 | 自定 | 工作量极大 |
+| ⑤ | Launcher3 官方「布局提供者」通道（`launcher3.layout.provider` + BlobStore / ContentProvider，XML 导入导出） | adb 或 Shizuku（免 root） | 高 | 瞬时 | **本项目主路径**（见 `notes/05`–`07`） |
 
 **LLM 的定位**：仅作可选的「语义分组」规划层（如「工作类放一起」），核心排列算法（字母 / 类别 / 网格蛇形填充）应为确定性逻辑，不依赖 LLM。
 
@@ -117,6 +118,12 @@ cd poc
 bash build.sh          # 产出 poc-layoutprovider.apk
 ```
 
+> 本仓已随附预构建产物 `poc/poc-layoutprovider.apk`；只想体验、不想自行构建时，可跳过本节直接安装：
+>
+> ```bash
+> adb install -r poc/poc-layoutprovider.apk
+> ```
+
 脚本**不依赖 Gradle / AGP**，只用 SDK 自带的 `aapt2 + d8 + zipalign + apksigner`。
 SDK 路径与版本自动探测，可用环境变量覆盖：
 
@@ -171,6 +178,8 @@ bash poc/tools/capture-golden.sh <输出目录>
 ## 许可
 
 本项目以 **Apache License 2.0** 发布，见 [`LICENSE`](LICENSE)。
+
+Copyright 2026 ReSerendipity。
 
 ### 第三方组件
 
