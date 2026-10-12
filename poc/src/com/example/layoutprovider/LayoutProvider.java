@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
@@ -108,6 +109,14 @@ public class LayoutProvider extends ContentProvider {
         String authority = launcherAuthority();
         out.putString("LAUNCHER_AUTHORITY", authority);
 
+        // 权限校验（ITEM 2）：非只读 method 仅允许 root(0)、shell/adb(2000)、本应用 UID 调用，防止任意 app 触发 pm clear 等危险操作
+        if (!isReadOnly(method)) {
+            int cu = Binder.getCallingUid();
+            if (cu != 0 && cu != 2000 && cu != android.os.Process.myUid()) {
+                out.putString("RESULT", "ERR: 无权调用 " + method + " (uid=" + cu + ")");
+                return out;
+            }
+        }
         try {
             switch (method == null ? "" : method) {
 
@@ -672,5 +681,11 @@ public class LayoutProvider extends ContentProvider {
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         return 0;
+    }
+
+    /** 只读 method（向 launcher 开放）；其余写/危险 method 需 root(0)/shell(2000)/本应用 UID 调用 */
+    private static boolean isReadOnly(String m) {
+        return "PLAN_JSON".equals(m) || "EXPORT_CONFIG".equals(m) || "PROFILE_LIST".equals(m)
+                || "LIST_SNAPSHOTS".equals(m) || "SELFTEST_EXPORT".equals(m);
     }
 }
