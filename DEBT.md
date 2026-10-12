@@ -12,6 +12,7 @@
 | D-04 | 发布 APK 未混淆/无 mapping | P1 | 未处理（需先决定是否有意保留） |
 | D-05 | `UsageRank` 反向引用 `LayoutPlanner`，依赖图不单向 | P1 | 未处理 |
 | D-06 | HANDOFF 中三处数字与代码不符 | P0 | 已处理（见文末） |
+| D-07 | shizuku 二进制字节校验未执行（沙箱取不到字节） | P1 | 未处理（需有网/SDK 环境执行） |
 
 ---
 
@@ -101,3 +102,33 @@ private static final String TAG = LayoutPlanner.TAG;
 
 **这一条留在这里而不是删掉**，是为了给后面的文档改动留一个提醒：本仓的文档数字是**会漂移的**，
 `HANDOFF.md` 是唯一的架构说明，改代码时顺手改它，或者把这些数字改成可执行的测量。
+
+---
+
+## D-07 shizuku 二进制字节校验未执行（P1）
+
+**背景**：`poc/shizuku/` 下 11 个二进制（aidl-13.1.5.aar、aidl-classes.jar、annotation-1.3.0.jar、
+api-13.1.5.aar、api-13.1.5.pom、api-classes.jar、provider-13.1.5.aar、provider-13.1.5.pom、
+provider-classes.jar、shared-13.1.5.aar、shared-classes.jar）的字节校验（sha256）需在**有出网或 SDK 渠道**的环境执行。
+沙箱内 codeload tar 60s 截断、raw.githubusercontent 出口超时、jsDelivr 403、api.github.com 限流 ⇒ 取不到字节、算不出 sha256。
+
+**待办（可交接）**：在能下载这 11 个文件的环境执行下述命令，产出 `poc/shizuku/SHA256SUMS`：
+
+```sh
+cd poc/shizuku
+sha256sum aidl-13.1.5.aar aidl-classes.jar annotation-1.3.0.jar api-13.1.5.aar api-13.1.5.pom \
+  api-classes.jar provider-13.1.5.aar provider-13.1.5.pom provider-classes.jar \
+  shared-13.1.5.aar shared-classes.jar > SHA256SUMS
+sha256sum -c SHA256SUMS   # 期望 11 行全 OK
+```
+
+**期望输出格式**（`SHA256SUMS` 每行 `<sha256>  <文件名>`，共 11 行）：
+
+```
+<sha256>  aidl-13.1.5.aar
+<sha256>  aidl-classes.jar
+… 共 11 行 …
+```
+
+**落地后**：把 `sha256sum -c SHA256SUMS` 校验接进 `poc/build.sh` 的 shizuku 段（`SZK_JARS` 赋值前），
+命令与期望见工单 ITEM 6；回滚点 = 删 `SHA256SUMS` 并 `git checkout <sha> -- poc/build.sh`。
