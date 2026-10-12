@@ -53,8 +53,10 @@ pick_dir() {
   if [ -n "$want" ] && [ -d "$parent/$prefix$want" ]; then
     echo "$parent/$prefix$want"; return 0
   fi
+  # shellcheck disable=SC2034  # ITEM5 取消「最新可用」回退后 best 不再读取；保留探测行以备将来精确钉版本
   best="$(find "$parent" -maxdepth 1 -mindepth 1 -type d -name "${prefix}[0-9]*" -exec basename {} \; | sort -V | tail -1 || true)"
-  if [ -n "$best" ]; then echo "$parent/$best"; return 0; fi
+  return 1 # 首选版本缺失即报错，不再回退"最新可用"（保证可重现）
+  # shellcheck disable=SC2317  # 上行已无条件返回；此兜底 return 保留为防御性，抑制不可达告警
   return 1
 }
 if ! BT="$(pick_dir "$SDK/build-tools" "$BT_VERSION" "")"; then
