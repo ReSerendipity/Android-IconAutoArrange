@@ -127,4 +127,12 @@ for tag in ('full', 'merge'):
 sys.exit(1 if bad else 0)
 PYEOF
 
+
+# 与仓内既有基线目录逐字节比对（DEBT.md D-01：此前只断言 mergeMode、不比对内容）。
+# golden-before 是回归基线：若输出是有意变更，先更新基线目录再抓取。
+for tag in full merge; do
+  want="$(md5sum "$HERE/../artifacts/golden-before/golden-$tag.xml" 2>/dev/null | cut -d' ' -f1)"
+  got="$(md5sum "$OUT/golden-$tag.xml" | cut -d' ' -f1)"
+  [ "$want" = "$got" ] || { echo "[$tag] 与 golden-before 不一致: $got" >&2; exit 1; }
+done
 echo "基线已写入 $OUT"
