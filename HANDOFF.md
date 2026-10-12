@@ -584,11 +584,11 @@ I LayoutProviderPoC: 规划结果: 共 19 个应用; 保留文件夹 4 个, 新�
 ### 第 1 步：重构 ✅
 
 ```
-LayoutProvider.java  ← 只做 ContentProvider 契约（1248 行 → 约 430 行）
+LayoutProvider.java  ← 只做 ContentProvider 契约（1248 行 → 676 行）
 LayoutPlanner.java   ← 纯规划：① 枚举 → ② 分类 → ③ 成组 → ④ 占格 → ⑤ 渲染 XML
 AppConfig.java       ← 全部配置收口（调试开关 / 覆盖 / 手动分组 / 网格）
 ```
-依赖单向：`LayoutProvider → LayoutPlanner → AppConfig`。
+依赖：`LayoutProvider → LayoutPlanner → AppConfig`，另有 `LayoutPlanner → UsageRank`（`UsageRank` 这个标识符在 `LayoutPlanner.java` 里出现 6 次）。这一层还不是单向的：`UsageRank.java:40` 写着 `private static final String TAG = LayoutPlanner.TAG;`，即 UsageRank 反向引用 LayoutPlanner。
 **存储格式暂未改动**（仍 `ov:` / `cf:` / 平铺 key），JSON 化 + Profile 留到第 7 步。
 
 **验证双保险**：
@@ -820,7 +820,7 @@ UI 是一排**按点选顺序编号**的应用 chips（`1. Chrome` …），超�
 | 9 | 配置导入导出 | ✅ |
 | 10 | 网格向导 + 分类重命名 | ✅ |
 
-**代码：1 个 1248 行的文件 → 9 个职责单一的文件。APK：16.8 KB（P2）→ 78.4 KB（P10）。**
+**代码：1 个 1248 行的文件 → 8 个职责单一的 Java 文件（`poc/src/com/example/layoutprovider/` 下实测 8 个 `.java`）。APK：16.8 KB（P2）→ 78,353 B（P10，即 76.5 KiB）。**
 
 ### 整个 P10 层面的遗留
 
