@@ -23,6 +23,11 @@ TARGET_API="${TARGET_API:-35}"       # 与 AndroidManifest 的 targetSdkVersion 
 BT_VERSION="${BT_VERSION:-35.0.0}"   # 首选 build-tools 版本
 MIN_API=26                           # 与 AndroidManifest 的 minSdkVersion 一致
 
+# 版本注入：versionName 取 git describe（无 tag 则短 SHA，dirty 加后缀），versionCode 取末次提交时间戳；
+# 本机无 .git 时退回 UTC 日期 / 当前时间。可用 VERSION_NAME / VERSION_CODE 环境变量显式覆盖。
+VERSION_NAME="${VERSION_NAME:-$(git -C "$HERE" describe --tags --always --dirty 2>/dev/null || printf 'dev-%s' "$(date -u +%Y%m%d)")}"
+VERSION_CODE="${VERSION_CODE:-$(git -C "$HERE" log -1 --format=%ct 2>/dev/null || date +%s)}"
+
 # ------------------------------------------------------------------ 定位 SDK
 find_sdk() {
   local c
@@ -48,7 +53,7 @@ pick_dir() {
   if [ -n "$want" ] && [ -d "$parent/$prefix$want" ]; then
     echo "$parent/$prefix$want"; return 0
   fi
-  best="$(ls -1 "$parent" 2>/dev/null | grep -E "^${prefix}[0-9]" | sort -V | tail -1 || true)"
+  best="$(find "$parent" -maxdepth 1 -mindepth 1 -type d -name "${prefix}[0-9]*" -exec basename {} \; | sort -V | tail -1 || true)"
   if [ -n "$best" ]; then echo "$parent/$best"; return 0; fi
   return 1
 }
@@ -104,21 +109,25 @@ rm -rf "$OUT"
 mkdir -p "$OUT/classes" "$OUT/dex"
 
 echo "[1/6] javac -> classes"
+mapfile -t SRC_FILES < <(find "$HERE/src" -name '*.java')
 javac -source 11 -target 11 -encoding UTF-8 \
   -classpath "$PLATFORM:$SZK_JARS" -d "$OUT/classes" \
-  $(find "$HERE/src" -name '*.java')
+  "${SRC_FILES[@]}"
 
 echo "[2/6] aapt2 link -> apk 骨架（含 manifest + assets）"
 "$AAPT2" link -o "$OUT/app-unsigned.apk" \
   -I "$PLATFORM" \
   --manifest "$HERE/AndroidManifest.xml" \
   -A "$HERE/assets" \
-  --min-sdk-version "$MIN_API" --target-sdk-version "$TARGET_API"
+  --min-sdk-version "$MIN_API" --target-sdk-version "$TARGET_API" \
+  --version-code "$VERSION_CODE" \
+  --version-name "$VERSION_NAME"
 
 echo "[3/6] d8 -> classes.dex（含 Shizuku SDK）"
+mapfile -t CLASS_FILES < <(find "$OUT/classes" -name '*.class')
 "$D8" --lib "$PLATFORM" --min-api "$MIN_API" \
   --output "$OUT/dex" \
-  $(find "$OUT/classes" -name '*.class') \
+  "${CLASS_FILES[@]}" \
   "$SZK/api-classes.jar" "$SZK/provider-classes.jar" \
   "$SZK/aidl-classes.jar" "$SZK/shared-classes.jar"
 
