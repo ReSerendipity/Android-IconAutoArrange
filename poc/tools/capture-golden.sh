@@ -59,6 +59,7 @@ fi
 
 # 预检：把 adb 那句难懂的 "more than one device" 换成明确提示
 if [ -n "$DEV" ]; then
+  # shellcheck disable=SC2086  # $DEV 形如 "-s <serial>"，本就按词拆开传给 adb（DEBT.md D-03：有意为之）
   if ! "$ADB_BIN" $DEV get-state >/dev/null 2>&1; then
     echo "错误：DEV=\"$DEV\" 指定的设备不可用。" >&2
     "$ADB_BIN" devices >&2 || true
@@ -81,8 +82,10 @@ fi
 
 mkdir -p "$OUT"
 
+# shellcheck disable=SC2086  # 同上：$DEV 有意分词
 "$ADB_BIN" $DEV shell "content call --uri content://$AUTH --method PLAN_JSON --extra forceFull:b:true" \
   > "$OUT/raw-full.txt" 2>&1
+# shellcheck disable=SC2086  # 同上：$DEV 有意分词
 "$ADB_BIN" $DEV shell "content call --uri content://$AUTH --method PLAN_JSON" \
   > "$OUT/raw-merge.txt" 2>&1
 
