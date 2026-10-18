@@ -30,7 +30,7 @@
 - 遵循 **Keep a Changelog**：`Added / Changed / Fixed / Deprecated / Removed / Security`。
 - 每次合并 `main` 在 `[Unreleased]` 追加；type 映射 `feat→Added`、`fix→Fixed`、`refactor→Changed`。
 - 发版时 `[Unreleased]` → `[VERSION] - YYYY-MM-DD`。
-- **本仓现状：无 `CHANGELOG.md`**（仓根不存在该文件）。本仓以 `DEBT.md` / `HANDOFF.md` / `notes/` 记录演进，但**均非 Keep a Changelog 格式**，不替代 CHANGELOG。
+- **本仓现状：已建立 `CHANGELOG.md`**（仓根 `CHANGELOG.md`，Keep a Changelog 格式，当前仅有 `[Unreleased]`）。本仓同时以 `DEBT.md` / `HANDOFF.md` / `notes/` 记录演进，但**均非 Keep a Changelog 格式**，不替代 CHANGELOG。
 - 引入本规范要求的 `CHANGELOG.md` 的方式与时间：**待定（负责人 + 触发条件：本仓首次对外发版时）**。本单**不创建 CHANGELOG**。
 
 ## 3. 发布流程（远端）
