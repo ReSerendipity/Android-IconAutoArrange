@@ -1,0 +1,55 @@
+name: release
+
+# tag 驱动（§10.1 根原则 2）：仅 push 形如 vMAJOR.MINOR.PATCH 的 tag 触发。
+on:
+  push:
+    tags:
+      - "v*"
+
+# §10.1 根原则 1：构建 / 打包 / 上传一律在远端完成，本地不产出交付物。
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 校验 tag 形如 vMAJOR.MINOR.PATCH
+        run: |
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "错误：tag 必须形如 vMAJOR.MINOR.PATCH，实际为 '${GITHUB_REF_NAME}'" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          # poc/build.sh 用 `git describe --tags` 注入 VERSION_NAME，需 tag 与完整历史。
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 远端构建 APK（与 poc/build.sh 一致，不经 Gradle/AGP）
+        run: bash poc/build.sh
+
+      - name: 生成 SHA256SUMS.txt
+        run: |
+          cd poc
+          sha256sum poc-layoutprovider.apk > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: 建 draft Release 并挂资产
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # §10.2：远端建 draft Release，人工审核后再 published。
+          gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
+            --generate-notes \
+            --draft \
+            --title "${GITHUB_REF_NAME}"
+          gh release upload "${GITHUB_REF_NAME}" \
+            poc/poc-layoutprovider.apk \
+            poc/SHA256SUMS.txt
