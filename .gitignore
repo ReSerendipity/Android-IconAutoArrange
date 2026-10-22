@@ -41,3 +41,6 @@ desktop.ini
 *.swp
 .idea/
 .vscode/
+AGENTS.md
+!/AGENTS.md
+/local/
